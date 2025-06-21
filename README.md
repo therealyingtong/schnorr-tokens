@@ -8,10 +8,10 @@ Our project has two contributions:
 ## Anonymous proxy signatures
 
 A classic digital signature looks like this.
-![image](https://hackmd.io/_uploads/ryh-NSNVlx.png)
+![image](https://github.com/therealyingtong/schnorr-tokens/blob/main/readme_diagrams/signature.png?raw=true)
 
 We implement the anonymous proxy signatures of [[AN23]](https://eprint.iacr.org/2023/833), schematically looks like this:
-![image](https://hackmd.io/_uploads/H1TG4B44xe.png)
+![image](https://github.com/therealyingtong/schnorr-tokens/blob/main/readme_diagrams/delegated_signature.png?raw=true)
 
 The main security properties are:
 - signer does not show their private key.
