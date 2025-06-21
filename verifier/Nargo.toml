@@ -1,0 +1,6 @@
+[package]
+name = "verifier"
+type = "bin"
+authors = [""]
+
+[dependencies]
