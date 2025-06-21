@@ -1,6 +1,6 @@
 # Proxy Signatures for Delegated Spending
 
-*Team FKA Geometry. ZK Hack Berlin 20-22 June, 2025.*
+*Team FKA Geometry & Friend. ZK Hack Berlin 20-22 June, 2025.*
 
 Our project has two contributions:
 1. New crypto primitive implementation: anonymous proxy signatures [[AN23]](https://eprint.iacr.org/2023/833). In arkworks and with WASM bindings for in-browser execution.
