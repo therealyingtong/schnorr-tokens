@@ -1,5 +1,5 @@
-use crate::an23_proxy_signature::{AN23ProxySignature, DelegationSpec, Parameters, SigningKey};
 use crate::ProxySignature;
+use crate::an23_proxy_signature::{AN23ProxySignature, DelegationSpec, Parameters, SigningKey};
 use ark_ec::{AffineRepr, CurveGroup, PrimeGroup};
 use ark_ff::{BigInteger, PrimeField};
 use ark_grumpkin::Fq;
@@ -113,17 +113,20 @@ pub fn keygen(params: &CurvePoint) -> Keypair {
         &Parameters { generator: params },
     )
     .unwrap();
-    Keypair {sk: sk.0.into(), vk: vk.into()}
+    Keypair {
+        sk: sk.0.into(),
+        vk: vk.into(),
+    }
 }
 
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Signature {
-    sigma_c0 : Fr,
-    sigma_c1 : Fr,
-    sigma_z1 : Fr,
-    theta_m0 : Fr,
-    theta_z0 : CurvePoint,
+    sigma_c0: Fr,
+    sigma_c1: Fr,
+    sigma_z1: Fr,
+    theta_m0: Fr,
+    theta_z0: CurvePoint,
 }
 
 #[wasm_bindgen]
@@ -163,17 +166,21 @@ impl From<crate::an23_proxy_signature::Signature<ark_grumpkin::Projective>> for 
 
 #[wasm_bindgen]
 pub fn sign(params: &CurvePoint, sk: &Fr, message: &Fr, policy: Option<u64>) -> Signature {
-    let params = Parameters { generator: params.into() };
+    let params = Parameters {
+        generator: params.into(),
+    };
     let sk = SigningKey::<ark_grumpkin::Projective>(sk.into());
     let message = ark_grumpkin::Fr::from(message);
-    let policy = policy.map(|p| crate::an23_proxy_signature::Policy { amount: p});
+    let policy = policy.map(|p| crate::an23_proxy_signature::Policy { amount: p });
     AN23ProxySignature::<ark_grumpkin::Projective>::sign(
         &mut OsRng,
         &params,
         &sk,
         &message,
         policy.as_ref(),
-    ).unwrap().into()
+    )
+    .unwrap()
+    .into()
 }
 
 #[wasm_bindgen]
@@ -181,7 +188,7 @@ pub fn sign(params: &CurvePoint, sk: &Fr, message: &Fr, policy: Option<u64>) -> 
 struct SigningToken {
     z0: Fr,
     c0: Fr,
-    m0: Fr
+    m0: Fr,
 }
 
 #[wasm_bindgen]
@@ -222,7 +229,7 @@ impl From<&SigningToken> for crate::an23_proxy_signature::SigningToken<ark_grump
 #[wasm_bindgen]
 struct DelegationRes {
     delegation_info: Vec<SigningToken>,
-    revokation_key: Vec<Fr>
+    revokation_key: Vec<Fr>,
 }
 
 #[wasm_bindgen]
@@ -238,16 +245,18 @@ impl DelegationRes {
 
 #[wasm_bindgen]
 pub fn delegate(params: &CurvePoint, sk: &Fr, delegation_spec: u64) -> DelegationRes {
-    let params = Parameters { generator: params.into() };
+    let params = Parameters {
+        generator: params.into(),
+    };
     let sk = SigningKey::<ark_grumpkin::Projective>(sk.into());
-    let deg_spec = DelegationSpec { number_of_tokens: delegation_spec };
+    let deg_spec = DelegationSpec {
+        number_of_tokens: delegation_spec,
+    };
 
     let (delegation_info, rev_key) = AN23ProxySignature::<ark_grumpkin::Projective>::delegate(
-        &mut OsRng,
-        &params,
-        &sk,
-        &deg_spec,
-    ).unwrap();
+        &mut OsRng, &params, &sk, &deg_spec,
+    )
+    .unwrap();
 
     DelegationRes {
         delegation_info: delegation_info.into_iter().map(Into::into).collect(),
@@ -256,10 +265,17 @@ pub fn delegate(params: &CurvePoint, sk: &Fr, delegation_spec: u64) -> Delegatio
 }
 
 #[wasm_bindgen]
-pub fn delegated_sign(params: &CurvePoint, delegation_info: Vec<SigningToken>, message: &Fr) -> Signature {
-    let params = Parameters { generator: params.into() };
-    let mut delegation_info: Vec<crate::an23_proxy_signature::SigningToken<ark_grumpkin::Projective>> =
-        delegation_info.iter().map(Into::into).collect();
+pub fn delegated_sign(
+    params: &CurvePoint,
+    delegation_info: Vec<SigningToken>,
+    message: &Fr,
+) -> Signature {
+    let params = Parameters {
+        generator: params.into(),
+    };
+    let mut delegation_info: Vec<
+        crate::an23_proxy_signature::SigningToken<ark_grumpkin::Projective>,
+    > = delegation_info.iter().map(Into::into).collect();
     let message = ark_grumpkin::Fr::from(message);
 
     AN23ProxySignature::<ark_grumpkin::Projective>::delegated_sign(
@@ -267,7 +283,9 @@ pub fn delegated_sign(params: &CurvePoint, delegation_info: Vec<SigningToken>, m
         &params,
         &mut delegation_info,
         &message,
-    ).unwrap().into()
+    )
+    .unwrap()
+    .into()
 }
 
 #[wasm_bindgen]

@@ -1,11 +1,5 @@
-use crate::an23_proxy_signature::{AN23ProxySignature, DelegationSpec, Parameters, SigningKey};
-use ark_ec::{AffineRepr, CurveGroup, PrimeGroup};
-use ark_ff::{BigInteger, PrimeField};
-use ark_grumpkin::Fq;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::Rng;
-use rand::rngs::OsRng;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 pub mod an23_proxy_signature;
 pub mod noir_utils;
@@ -95,4 +89,3 @@ pub trait ProxySignature {
         rev_state: &mut Self::RevocationState,
     ) -> Result<bool, Error>;
 }
-

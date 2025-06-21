@@ -1,3 +1,4 @@
+use crate::{Error, ProxySignature};
 use ark_ec::CurveGroup;
 use ark_ff::{
     BigInteger, Field, PrimeField, UniformRand,
@@ -6,7 +7,6 @@ use ark_ff::{
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use blake2::{Blake2s256, Digest};
 use rand::Rng;
-use crate::{Error, ProxySignature};
 
 pub struct AN23ProxySignature<G: CurveGroup> {
     _marker: std::marker::PhantomData<G>,

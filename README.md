@@ -1,4 +1,4 @@
-# Proxy Signatures for Delegated Wallets
+# Proxy Signatures for Delegated Spending
 
 *Team FKA Geometry. ZK Hack Berlin 20-22 June, 2025.*
 
@@ -47,6 +47,7 @@ This enables multiple types of applications:
 - WASM bindings for the concrete construction are in [`src/wasm_bindings.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/main/src/wasm_bindings.rs).
 - A Noir circuit for signature verification in [`verifier/src/main.nr`](https://github.com/therealyingtong/schnorr-tokens/blob/main/verifier/src/main.nr).
 
+## How to run the examples
 Instructions to compile to WASM:
 - install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) 
 - run `RUSTFLAGS='--cfg getrandom_backend="wasm_js"' wasm-pack build --target nodejs`
