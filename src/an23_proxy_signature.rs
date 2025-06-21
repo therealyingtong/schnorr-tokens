@@ -4,6 +4,7 @@ use ark_ff::{
     field_hashers::{DefaultFieldHasher, HashToField},
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use blake2::{Blake2s256, Digest};
 use rand::Rng;
 use sha2::Sha256;
 
@@ -13,7 +14,11 @@ pub struct AN23ProxySignature<G: CurveGroup> {
     _marker: std::marker::PhantomData<G>,
 }
 
-impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
+impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G>
+where
+    G::ScalarField: PrimeField,
+    G::BaseField: PrimeField,
+{
     type Parameters = Parameters<G>;
     type SigningKey = SigningKey<G>;
     type VerificationKey = VerificationKey<G>;
@@ -86,9 +91,9 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         let r1 = G::ScalarField::rand(rng); // e
         let R1 = parameters.generator.mul(r1);
         let c1 = hash::<G>(vec![
-            &Message::Field(message.clone()),
-            &Message::Curve(Z0.into()),
-            &Message::Curve(R1.into()),
+            Message::Field(message.clone()),
+            Message::Curve(Z0.into()),
+            Message::Curve(R1.into()),
         ]); // c
         let z1 = r1 + c1 * signing_token.z0; // s
 
@@ -140,9 +145,9 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
 
         if signature.sigma.c0
             != hash::<G>(vec![
-                &Message::Field(signature.theta.m0),
-                &Message::Curve(vk.clone()), // [x]G
-                &Message::Curve(R0.into()),  // [r0]G
+                Message::Field(signature.theta.m0),
+                Message::Curve(vk.clone()), // [x]G
+                Message::Curve(R0.into()),  // [r0]G
             ])
         {
             return Ok(false);
@@ -150,9 +155,9 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
 
         if signature.sigma.c1
             != hash::<G>(vec![
-                &Message::Field(message.clone()),
-                &Message::Curve(signature.theta.Z0.into()),
-                &Message::Curve(R1.into()),
+                Message::Field(message.clone()),
+                Message::Curve(signature.theta.Z0.into()),
+                Message::Curve(R1.into()),
             ])
         {
             return Ok(false);
@@ -164,7 +169,11 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     }
 }
 
-impl<G: CurveGroup> AN23ProxySignature<G> {
+impl<G: CurveGroup> AN23ProxySignature<G>
+where
+    G::ScalarField: PrimeField,
+    G::BaseField: PrimeField,
+{
     fn generate_delegation_token<R: Rng>(
         rng: &mut R,
         parameters: &Parameters<G>,
@@ -175,9 +184,9 @@ impl<G: CurveGroup> AN23ProxySignature<G> {
         let r0 = G::ScalarField::rand(rng); // r
         let R0 = parameters.generator.mul(r0);
         let c0 = hash::<G>(vec![
-            &Message::Field(m0),
-            &Message::Curve(vk.clone()), // [x]G
-            &Message::Curve(R0.into()),
+            Message::Field(m0),
+            Message::Curve(vk.clone()), // [x]G
+            Message::Curve(R0.into()),
         ]); // w
         let z0 = r0 + c0 * sk.0; // z
 
@@ -214,21 +223,21 @@ pub struct SigningToken<G: CurveGroup> {
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 /// A AN23 signature. Can be produced by either the original signer or the proxy.
 pub struct Signature<G: CurveGroup> {
-    sigma: Sigma<G::ScalarField>,
-    theta: Theta<G>,
+    pub sigma: Sigma<G::ScalarField>,
+    pub theta: Theta<G>,
 }
 
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
-struct Sigma<F: Field> {
-    c0: F,
-    c1: F,
-    z1: F,
+pub struct Sigma<F: Field> {
+    pub c0: F,
+    pub c1: F,
+    pub z1: F,
 }
 
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
-struct Theta<G: CurveGroup> {
-    m0: G::ScalarField,
-    Z0: G,
+pub struct Theta<G: CurveGroup> {
+    pub m0: G::ScalarField,
+    pub Z0: G,
 }
 
 enum Message<G: CurveGroup> {
@@ -254,22 +263,35 @@ impl<G: CurveGroup> Message<G> {
     }
 }
 
-fn hash<G: CurveGroup>(message: Vec<&Message<G>>) -> G::ScalarField {
-    let hasher = <DefaultFieldHasher<Sha256> as HashToField<G::ScalarField>>::new(&[]);
+fn hash_to_field<F: PrimeField>(data: &[u8]) -> F {
+    let mut hasher = Blake2s256::new();
+    hasher.update(data);
+    let mut out = hasher.finalize();
+    out[31] = 0;
+    let out = F::from_le_bytes_mod_order(&out);
+    out
+}
+fn hash<G: CurveGroup>(message: Vec<Message<G>>) -> G::ScalarField
+where
+    G::ScalarField: PrimeField,
+    G::BaseField: PrimeField,
+{
     let preimage = message
         .iter()
-        .map(|m| m.to_bytes())
-        .flatten()
+        .flat_map(|m| m.to_bytes())
         .collect::<Vec<_>>();
-    let hashes: [G::ScalarField; 1] = hasher.hash_to_field(&preimage);
-    hashes[0]
+    hash_to_field(&preimage)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::noir_utils::{
+        grumpkin_fr_to_nr_code, grumpkin_point_to_nr_code, grumpkin_sig_to_nr_code,
+    };
     use ark_grumpkin::{Fr, Projective};
     use ark_std::test_rng;
+    use rand::thread_rng;
 
     #[test]
     fn test_an23_proxy_signature_vanilla() {
@@ -433,5 +455,28 @@ mod tests {
         );
 
         assert_eq!(verifier_decision, Err(Error::UseOfRevokedToken)); // Should fail due to revocation
+    }
+
+    #[test]
+    fn test_grumpkin() {
+        let mut rng = thread_rng();
+
+        let m = Fr::rand(&mut rng);
+
+        let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
+
+        let signature =
+            AN23ProxySignature::<Projective>::sign(&mut rng, &parameters, &sk, &m, None).unwrap();
+
+        println!("    let vk = {};", grumpkin_point_to_nr_code(vk.into()));
+        println!("    let msg = {};", grumpkin_fr_to_nr_code(m));
+        println!("{}", grumpkin_sig_to_nr_code(&signature));
+
+        let verifier_decision =
+            AN23ProxySignature::<Projective>::verify(&parameters, &vk, &m, &signature, &mut vec![])
+                .unwrap();
+
+        assert!(verifier_decision);
     }
 }

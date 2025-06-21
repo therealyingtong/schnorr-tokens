@@ -2,6 +2,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::Rng;
 
 pub mod an23_proxy_signature;
+pub mod noir_utils;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -10,7 +11,7 @@ pub enum Error {
     InvalidToken,
     DelegationFailed,
     UseOfRevokedToken,
-    NoDelegationToken
+    NoDelegationToken,
 }
 
 /// Interface for a proxy signature scheme as defined in [AN23](https://eprint.iacr.org/2023/833).
