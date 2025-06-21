@@ -192,9 +192,9 @@ impl Keypair {
 }
 
 #[wasm_bindgen]
-pub fn keygen(params: CurvePoint) -> Keypair {
+pub fn keygen(params: &CurvePoint) -> Keypair {
     let mut rng = OsRng;
-    let params: ark_grumpkin::Projective = params.into();
+    let params: ark_grumpkin::Projective = params.clone().into();
     let (sk, vk) = AN23ProxySignature::<ark_grumpkin::Projective>::keygen(
         &mut rng,
         &Parameters { generator: params },

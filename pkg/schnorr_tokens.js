@@ -64,8 +64,7 @@ function _assertClass(instance, klass) {
  */
 module.exports.keygen = function(params) {
     _assertClass(params, CurvePoint);
-    var ptr0 = params.__destroy_into_raw();
-    const ret = wasm.keygen(ptr0);
+    const ret = wasm.keygen(params.__wbg_ptr);
     return Keypair.__wrap(ret);
 };
 
