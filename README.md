@@ -33,3 +33,10 @@ Additional properties:
 ## Application
 
 We wrote an [Aztec account contract](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/write_accounts_contract) that verifies a proxy signature to authorize transactions.
+
+## Navigating the repo
+
+- Interface for proxy signature schemes over a generic curve (arkworks-style) in [`src/lib.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/2807b045a88bdf2e961096d12dcb9ad361229a44/src/lib.rs#L24-L96).
+- Our implementation of the concrete [AN23] scheme is in [`src/an23_proxy_signature.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/2807b045a88bdf2e961096d12dcb9ad361229a44/src/an23_proxy_signature.rs#L15-L193)
+- WASM bindings for the concrete construction are in TODO.
+- A Noir circuit for signature verification in [`verifier/src/main.nr`](https://github.com/therealyingtong/schnorr-tokens/blob/main/verifier/src/main.nr).
