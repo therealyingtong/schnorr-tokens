@@ -9,4 +9,6 @@ ark-ff = "0.5.0"
 ark-ec = "0.5.0"
 ark-std = { version = "0.5.0", features = ["getrandom"]}
 ark-bn254 = { version = "0.5.0", default-features = false, features = [ "curve" ] }
+ark-grumpkin = "0.5.0"
+blake2 = "0.10.6"
 rand = { version = "0.8", default-features = false, features = ["std_rng"]}
