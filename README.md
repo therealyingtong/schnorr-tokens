@@ -1,8 +1,10 @@
-# ZK Hack Berlin
+# Proxy Signatures for Delegated Wallets
+
+*Team FKA Geometry. ZK Hack Berlin 20-22 June, 2025.*
 
 Our project has two contributions:
-1. New crypto primitive implementation: anonymous proxy signatures [[AN23]](https://eprint.iacr.org/2023/833). In arkworks and with WASM compilation target.
-2. Toy application: Aztec Wallet with anonymous and undetectable delegation. This is the on-chain equivalent of a blank cheque.
+1. New crypto primitive implementation: anonymous proxy signatures [[AN23]](https://eprint.iacr.org/2023/833). In arkworks and with WASM bindings for in-browser execution.
+2. Toy application: Aztec Wallet with anonymous and undetectable delegation. This is the on-chain equivalent of a blank cheque with some spending restrictions set by the account holder.
 
 
 ## Anonymous proxy signatures
@@ -19,13 +21,15 @@ The main security properties are:
 
 
 Additional properties:
-- proxy remains anonymous
-- fine-grained delegation:
-    - choose the number of allowed signatures.
-    - enforce a (private) signing policy (e.g., maximum spend amount)
+- proxy remains anonymous.
+- each delegation token is unique.
+- delegation tokens can be individually revoked (either by the signer and verifier or verifier only, depending on the verifier's logic).
+- fine-grained delegation: the signer can enforce a (private) signing policy (e.g., maximum spend amount)
 
 > For the cryptographer judges, the signature scheme is a sort of two-layered Schnorr signature. In the first layer, the signer signs a token $k$ producing a Schnorr signature $(z, R)$. The $z$ part is then used as a *secret key* in the second Schnorr layer. This time, the proxy can use $z$ to sign a message $m$ of their choice.
 > 
 > Verification checks that the layers are consistent between each other and with the token $k$. By keeping a list of spent tokens, the verifier can enforce that token are one-time use.
 
 ## Application
+
+We wrote an [Aztec account contract](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/write_accounts_contract) that verifies a proxy signature to authorize transactions.
