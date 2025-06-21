@@ -116,9 +116,9 @@ impl From<ark_grumpkin::Fr> for Fr {
     }
 }
 
-impl From<Fr> for ark_grumpkin::Fr {
-    fn from(value: Fr) -> Self {
-        let mut bytes = value.bytes;
+impl From<&Fr> for ark_grumpkin::Fr {
+    fn from(value: &Fr) -> Self {
+        let bytes = value.clone().bytes;
         ark_grumpkin::Fr::from_le_bytes_mod_order(&bytes)
     }
 }
@@ -156,8 +156,8 @@ impl From<ark_grumpkin::Affine> for CurvePoint {
     }
 }
 
-impl From<CurvePoint> for ark_grumpkin::Projective {
-    fn from(value: CurvePoint) -> Self {
+impl From<&CurvePoint> for ark_grumpkin::Projective {
+    fn from(value: &CurvePoint) -> Self {
         let x = Fq::from_le_bytes_mod_order(&value.x);
         let y = Fq::from_le_bytes_mod_order(&value.y);
         ark_grumpkin::Affine::new(x, y).into()
@@ -194,22 +194,13 @@ impl Keypair {
 #[wasm_bindgen]
 pub fn keygen(params: &CurvePoint) -> Keypair {
     let mut rng = OsRng;
-    let params: ark_grumpkin::Projective = params.clone().into();
+    let params: ark_grumpkin::Projective = params.into();
     let (sk, vk) = AN23ProxySignature::<ark_grumpkin::Projective>::keygen(
         &mut rng,
         &Parameters { generator: params },
     )
     .unwrap();
     Keypair {sk: sk.0.into(), vk: vk.into()}
-}
-
-#[wasm_bindgen]
-pub fn get_pk(keypair: Keypair) -> CurvePoint {
-    keypair.vk
-}
-
-pub fn get_sk(keypair: Keypair) -> Fr {
-    keypair.sk
 }
 
 #[wasm_bindgen]
@@ -258,7 +249,7 @@ impl From<an23_proxy_signature::Signature<ark_grumpkin::Projective>> for Signatu
 }
 
 #[wasm_bindgen]
-pub fn sign(params: CurvePoint, sk: Fr, message: Fr, policy: Option<u64>) -> Signature {
+pub fn sign(params: &CurvePoint, sk: &Fr, message: &Fr, policy: Option<u64>) -> Signature {
     let params = Parameters { generator: params.into() };
     let sk = SigningKey::<ark_grumpkin::Projective>(sk.into());
     let message = ark_grumpkin::Fr::from(message);
@@ -305,12 +296,12 @@ impl From<an23_proxy_signature::SigningToken<ark_grumpkin::Projective>> for Sign
     }
 }
 
-impl From<SigningToken> for an23_proxy_signature::SigningToken<ark_grumpkin::Projective> {
-    fn from(token: SigningToken) -> Self {
+impl From<&SigningToken> for an23_proxy_signature::SigningToken<ark_grumpkin::Projective> {
+    fn from(token: &SigningToken) -> Self {
         an23_proxy_signature::SigningToken {
-            z0: ark_grumpkin::Fr::from(token.z0),
-            c0: ark_grumpkin::Fr::from(token.c0),
-            m0: ark_grumpkin::Fr::from(token.m0),
+            z0: ark_grumpkin::Fr::from(&token.z0),
+            c0: ark_grumpkin::Fr::from(&token.c0),
+            m0: ark_grumpkin::Fr::from(&token.m0),
         }
     }
 }
@@ -333,7 +324,7 @@ impl DelegationRes {
 }
 
 #[wasm_bindgen]
-pub fn delegate(params: CurvePoint, sk: Fr, delegation_spec: u64) -> DelegationRes {
+pub fn delegate(params: &CurvePoint, sk: &Fr, delegation_spec: u64) -> DelegationRes {
     let params = Parameters { generator: params.into() };
     let sk = SigningKey::<ark_grumpkin::Projective>(sk.into());
     let deg_spec = DelegationSpec { number_of_tokens: delegation_spec };
@@ -352,10 +343,10 @@ pub fn delegate(params: CurvePoint, sk: Fr, delegation_spec: u64) -> DelegationR
 }
 
 #[wasm_bindgen]
-pub fn delegated_sign(params: CurvePoint, delegation_info: Vec<SigningToken>, message: Fr) -> Signature {
+pub fn delegated_sign(params: &CurvePoint, delegation_info: Vec<SigningToken>, message: &Fr) -> Signature {
     let params = Parameters { generator: params.into() };
     let mut delegation_info: Vec<an23_proxy_signature::SigningToken<ark_grumpkin::Projective>> =
-        delegation_info.into_iter().map(Into::into).collect();
+        delegation_info.iter().map(Into::into).collect();
     let message = ark_grumpkin::Fr::from(message);
 
     AN23ProxySignature::<ark_grumpkin::Projective>::delegated_sign(

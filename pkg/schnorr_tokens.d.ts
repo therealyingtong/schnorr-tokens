@@ -2,7 +2,6 @@
 /* eslint-disable */
 export function setup(): CurvePoint;
 export function keygen(params: CurvePoint): Keypair;
-export function get_pk(keypair: Keypair): CurvePoint;
 export function sign(params: CurvePoint, sk: Fr, message: Fr, policy?: bigint | null): Signature;
 export function delegate(params: CurvePoint, sk: Fr, delegation_spec: bigint): DelegationRes;
 export function delegated_sign(params: CurvePoint, delegation_info: SigningToken[], message: Fr): Signature;

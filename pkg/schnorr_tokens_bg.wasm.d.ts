@@ -11,7 +11,6 @@ export const __wbg_keypair_free: (a: number, b: number) => void;
 export const keypair_sk: (a: number) => number;
 export const keypair_vk: (a: number) => number;
 export const keygen: (a: number) => number;
-export const get_pk: (a: number) => number;
 export const __wbg_signature_free: (a: number, b: number) => void;
 export const signature_sigma_c0: (a: number) => number;
 export const signature_sigma_c1: (a: number) => number;

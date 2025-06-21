@@ -69,17 +69,6 @@ module.exports.keygen = function(params) {
 };
 
 /**
- * @param {Keypair} keypair
- * @returns {CurvePoint}
- */
-module.exports.get_pk = function(keypair) {
-    _assertClass(keypair, Keypair);
-    var ptr0 = keypair.__destroy_into_raw();
-    const ret = wasm.get_pk(ptr0);
-    return CurvePoint.__wrap(ret);
-};
-
-/**
  * @param {CurvePoint} params
  * @param {Fr} sk
  * @param {Fr} message
@@ -88,12 +77,9 @@ module.exports.get_pk = function(keypair) {
  */
 module.exports.sign = function(params, sk, message, policy) {
     _assertClass(params, CurvePoint);
-    var ptr0 = params.__destroy_into_raw();
     _assertClass(sk, Fr);
-    var ptr1 = sk.__destroy_into_raw();
     _assertClass(message, Fr);
-    var ptr2 = message.__destroy_into_raw();
-    const ret = wasm.sign(ptr0, ptr1, ptr2, !isLikeNone(policy), isLikeNone(policy) ? BigInt(0) : policy);
+    const ret = wasm.sign(params.__wbg_ptr, sk.__wbg_ptr, message.__wbg_ptr, !isLikeNone(policy), isLikeNone(policy) ? BigInt(0) : policy);
     return Signature.__wrap(ret);
 };
 
@@ -124,10 +110,8 @@ function getArrayJsValueFromWasm0(ptr, len) {
  */
 module.exports.delegate = function(params, sk, delegation_spec) {
     _assertClass(params, CurvePoint);
-    var ptr0 = params.__destroy_into_raw();
     _assertClass(sk, Fr);
-    var ptr1 = sk.__destroy_into_raw();
-    const ret = wasm.delegate(ptr0, ptr1, delegation_spec);
+    const ret = wasm.delegate(params.__wbg_ptr, sk.__wbg_ptr, delegation_spec);
     return DelegationRes.__wrap(ret);
 };
 
@@ -150,12 +134,10 @@ function passArrayJsValueToWasm0(array, malloc) {
  */
 module.exports.delegated_sign = function(params, delegation_info, message) {
     _assertClass(params, CurvePoint);
-    var ptr0 = params.__destroy_into_raw();
-    const ptr1 = passArrayJsValueToWasm0(delegation_info, wasm.__wbindgen_malloc);
-    const len1 = WASM_VECTOR_LEN;
+    const ptr0 = passArrayJsValueToWasm0(delegation_info, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
     _assertClass(message, Fr);
-    var ptr2 = message.__destroy_into_raw();
-    const ret = wasm.delegated_sign(ptr0, ptr1, len1, ptr2);
+    const ret = wasm.delegated_sign(params.__wbg_ptr, ptr0, len0, message.__wbg_ptr);
     return Signature.__wrap(ret);
 };
 
