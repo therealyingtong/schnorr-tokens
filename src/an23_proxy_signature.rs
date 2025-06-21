@@ -178,6 +178,7 @@ impl<G: CurveGroup> AN23ProxySignature<G> {
     }
 }
 
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Parameters<G: CurveGroup> {
     pub generator: G,
 }
@@ -203,18 +204,21 @@ pub struct SigningToken<G: CurveGroup> {
     m0: G::ScalarField, // k
 }
 
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 /// A AN23 signature. Can be produced by either the original signer or the proxy.
 pub struct Signature<G: CurveGroup> {
     sigma: Sigma<G::ScalarField>,
     theta: Theta<G>,
 }
 
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 struct Sigma<F: Field> {
     c0: F,
     c1: F,
     z1: F,
 }
 
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 struct Theta<G: CurveGroup> {
     m0: G::ScalarField,
     Z0: G,

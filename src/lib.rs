@@ -1,3 +1,4 @@
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::Rng;
 
 pub mod an23_proxy_signature;
@@ -14,11 +15,11 @@ pub enum Error {
 /// Interface for a proxy signature scheme as defined in [AN23](https://eprint.iacr.org/2023/833).
 pub trait ProxySignature {
     /// Public parameters,
-    type Parameters;
+    type Parameters: CanonicalSerialize + CanonicalDeserialize;
     /// Private signing key.
     type SigningKey;
     /// Public verification key.
-    type VerificationKey;
+    type VerificationKey: CanonicalSerialize + CanonicalDeserialize;
     /// The type of messages that can be signed.
     type Message;
     /// The type of policy that can be used to restrict the delegation.
@@ -32,7 +33,7 @@ pub trait ProxySignature {
     /// A publicly accessible, append-only list of revoked delegation information.
     type RevocationState;
     /// A signature.
-    type Signature;
+    type Signature: CanonicalSerialize + CanonicalDeserialize;
 
     /// Generates the public parameters for the proxy signature scheme.
     fn setup<R: Rng>(rng: &mut R) -> Result<Self::Parameters, Error>;
