@@ -262,6 +262,7 @@ impl<G: CurveGroup> Message<G> {
 
 pub fn hash_to_field<F: PrimeField>(data: &[u8]) -> F {
     let mut hasher = Blake2s256::new();
+    let data = [0; 160];
     hasher.update(data);
     let mut out = hasher.finalize();
     out[31] = 0;
@@ -461,22 +462,26 @@ mod tests {
     fn test_grumpkin() {
         let mut rng = test_rng();
 
-        let m = Fr::rand(&mut rng);
-
         let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
 
-        let signature =
-            AN23ProxySignature::<Projective>::sign(&mut rng, &parameters, &sk, &m, None).unwrap();
-
+        println!("    let pk = {};", grumpkin_fr_to_nr_code(sk.0));
         println!("    let vk = {};", grumpkin_point_to_nr_code(vk.into()));
-        println!("    let msg = {};", grumpkin_fr_to_nr_code(m));
-        println!("{}", grumpkin_sig_to_nr_code(&signature));
 
-        let verifier_decision =
-            AN23ProxySignature::<Projective>::verify(&parameters, &vk, &m, &signature, &mut vec![])
-                .unwrap();
+        for i in 0..10 {
+            let m = Fr::rand(&mut rng);
+            let signature =
+                AN23ProxySignature::<Projective>::sign(&mut rng, &parameters, &sk, &m, None).unwrap();
 
-        assert!(verifier_decision);
+            println!("TEST CASE {i}\n");
+            println!("    let msg = {};", grumpkin_fr_to_nr_code(m));
+            println!("{}", grumpkin_sig_to_nr_code(&signature));
+
+            let verifier_decision =
+                AN23ProxySignature::<Projective>::verify(&parameters, &vk, &m, &signature, &mut vec![])
+                    .unwrap();
+
+            assert!(verifier_decision);
+        }
     }
 }
