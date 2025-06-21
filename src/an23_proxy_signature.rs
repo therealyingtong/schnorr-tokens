@@ -99,11 +99,13 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     }
 
     fn revoke(
-        parameters: &Self::Parameters,
-        delegation_info: &Self::DelegationInfo,
+        _parameters: &Self::Parameters,
+        _delegation_info: &Self::DelegationInfo,
         rev_key: &Self::RevocationKey,
-    ) -> Result<Self::RevocationState, crate::Error> {
-        todo!()
+        rev_state: &mut Self::RevocationState
+    ) -> Result<(), crate::Error> {
+        rev_state.extend(rev_key.iter().cloned());
+        Ok(())
     }
 
     fn verify(
@@ -318,5 +320,109 @@ mod tests {
         .unwrap();
 
         assert!(verifier_decision);
+    }
+
+    #[test]
+    fn test_verifier_revocation() {
+        let mut rng = test_rng();
+        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+
+        let mut rev_state = Vec::new(); // Initialize an empty revocation state
+
+        let (delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+            &mut rng,
+            &parameters,
+            &sk,
+            &DelegationSpec {
+                number_of_tokens: 1,
+            },
+        )
+        .unwrap();
+
+        let message = Fr::rand(&mut rng);
+
+        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+            &mut rng,
+            &parameters,
+            &delegation_info,
+            &message,
+        )
+        .unwrap();
+
+        // Verify the signature once and change revocation state
+        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+            &parameters,
+            &vk,
+            &message,
+            &signature,
+            &mut rev_state,
+        )
+        .unwrap();
+
+        assert!(verifier_decision); // Initial verification should succeed
+
+        assert!(rev_state.len() == 1); // Ensure revocation state has one entry
+
+        // Now, try to verify the same signature again, which should fail due to revocation
+        let second_verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+            &parameters,
+            &vk,
+            &message,
+            &signature,
+            &mut rev_state,
+        );
+        assert_eq!(
+            second_verifier_decision,
+            Err(Error::UseOfRevokedToken)
+        ); // Should fail due to revocation
+    }
+
+    #[test]
+    fn test_issuer_revocation() {
+        let mut rng = test_rng();
+        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+
+        let mut rev_state = Vec::new(); // Initialize an empty revocation state
+
+        let (delegation_info, rev_key) = AN23ProxySignature::<G1Projective>::delegate(
+            &mut rng,
+            &parameters,
+            &sk,
+            &DelegationSpec {
+                number_of_tokens: 1,
+            },
+        )
+        .unwrap();
+
+        let message = Fr::rand(&mut rng);
+
+        // Revoke the delegation
+        AN23ProxySignature::<G1Projective>::revoke(
+            &parameters,
+            &delegation_info,
+            &rev_key,
+            &mut rev_state,
+        ).unwrap();
+
+        // Sign after revocation
+        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+            &mut rng,
+            &parameters,
+            &delegation_info,
+            &message,
+        )
+        .unwrap();
+
+        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+            &parameters,
+            &vk,
+            &message,
+            &signature,
+            &mut rev_state,
+        );
+
+        assert_eq!(verifier_decision, Err(Error::UseOfRevokedToken)); // Should fail due to revocation
     }
 }

@@ -2,7 +2,7 @@ use rand::Rng;
 
 pub mod an23_proxy_signature;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     SetupFailed,
     InvalidSignature,
@@ -56,7 +56,8 @@ pub trait ProxySignature {
         parameters: &Self::Parameters,
         delegation_info: &Self::DelegationInfo,
         rev_key: &Self::RevocationKey,
-    ) -> Result<Self::RevocationState, Error>;
+        rev_state: &mut Self::RevocationState
+    ) -> Result<(), Error>;
 
     fn verify(
         parameters: &Self::Parameters,
