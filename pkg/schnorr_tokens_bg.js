@@ -162,6 +162,23 @@ export function delegated_sign(params, delegation_info, message) {
     return Signature.__wrap(ret);
 }
 
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+/**
+ * @param {Uint8Array} message
+ * @returns {Fr}
+ */
+export function hash_to_field(message) {
+    const ptr0 = passArray8ToWasm0(message, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.hash_to_field(ptr0, len0);
+    return Fr.__wrap(ret);
+}
+
 const CurvePointFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_curvepoint_free(ptr >>> 0, 1));

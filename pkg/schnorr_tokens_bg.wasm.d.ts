@@ -28,6 +28,7 @@ export const delegationres_delegation_info: (a: number) => [number, number];
 export const delegationres_revokation_key: (a: number) => [number, number];
 export const delegate: (a: number, b: number, c: bigint) => number;
 export const delegated_sign: (a: number, b: number, c: number, d: number) => number;
+export const hash_to_field: (a: number, b: number) => number;
 export const __wbindgen_exn_store: (a: number) => void;
 export const __externref_table_alloc: () => number;
 export const __wbindgen_export_2: WebAssembly.Table;

@@ -261,7 +261,7 @@ impl<G: CurveGroup> Message<G> {
     }
 }
 
-fn hash_to_field<F: PrimeField>(data: &[u8]) -> F {
+pub fn hash_to_field<F: PrimeField>(data: &[u8]) -> F {
     let mut hasher = Blake2s256::new();
     hasher.update(data);
     let mut out = hasher.finalize();

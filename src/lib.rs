@@ -365,3 +365,8 @@ pub fn delegated_sign(params: CurvePoint, delegation_info: Vec<SigningToken>, me
         &message,
     ).unwrap().into()
 }
+
+#[wasm_bindgen]
+pub fn hash_to_field(message: &[u8]) -> Fr {
+    an23_proxy_signature::hash_to_field::<ark_grumpkin::Fr>(message).into()
+}
