@@ -3,6 +3,7 @@ use ark_ff::{BigInteger, PrimeField};
 use ark_grumpkin::Projective;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::{Rng};
+use rand::rngs::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use crate::an23_proxy_signature::AN23ProxySignature;
 
@@ -113,5 +114,6 @@ impl From<ark_grumpkin::Projective> for CurvePoint {
 
 #[wasm_bindgen]
 pub fn setup() -> CurvePoint {
-    Projective::generator().into()
+    let mut rng = OsRng;
+    AN23ProxySignature::<Projective>::setup(&mut rng).unwrap().generator.into()
 }
