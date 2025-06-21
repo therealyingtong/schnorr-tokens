@@ -1,0 +1,37 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_fr_free: (a: number, b: number) => void;
+export const fr_bytes: (a: number) => [number, number];
+export const __wbg_curvepoint_free: (a: number, b: number) => void;
+export const curvepoint_x: (a: number) => [number, number];
+export const curvepoint_y: (a: number) => [number, number];
+export const setup: () => number;
+export const __wbg_keypair_free: (a: number, b: number) => void;
+export const keypair_sk: (a: number) => number;
+export const keypair_vk: (a: number) => number;
+export const keygen: (a: number) => number;
+export const get_pk: (a: number) => number;
+export const __wbg_signature_free: (a: number, b: number) => void;
+export const signature_sigma_c0: (a: number) => number;
+export const signature_sigma_c1: (a: number) => number;
+export const signature_sigma_z1: (a: number) => number;
+export const signature_theta_m0: (a: number) => number;
+export const signature_theta_z0: (a: number) => number;
+export const sign: (a: number, b: number, c: number, d: number, e: bigint) => number;
+export const __wbg_signingtoken_free: (a: number, b: number) => void;
+export const signingtoken_z0: (a: number) => number;
+export const signingtoken_c0: (a: number) => number;
+export const signingtoken_m0: (a: number) => number;
+export const __wbg_delegationres_free: (a: number, b: number) => void;
+export const delegationres_delegation_info: (a: number) => [number, number];
+export const delegationres_revokation_key: (a: number) => [number, number];
+export const delegate: (a: number, b: number, c: bigint) => number;
+export const delegated_sign: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_export_2: WebAssembly.Table;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __externref_drop_slice: (a: number, b: number) => void;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_start: () => void;

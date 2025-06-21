@@ -1,0 +1,17 @@
+{
+  "name": "schnorr_tokens",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "schnorr_tokens_bg.wasm",
+    "schnorr_tokens.js",
+    "schnorr_tokens_bg.js",
+    "schnorr_tokens.d.ts"
+  ],
+  "main": "schnorr_tokens.js",
+  "types": "schnorr_tokens.d.ts",
+  "sideEffects": [
+    "./schnorr_tokens.js",
+    "./snippets/*"
+  ]
+}
