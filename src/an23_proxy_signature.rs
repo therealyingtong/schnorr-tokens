@@ -1,0 +1,313 @@
+use ark_ec::CurveGroup;
+use ark_ff::{
+    BigInteger, Field, PrimeField, UniformRand,
+    field_hashers::{DefaultFieldHasher, HashToField},
+};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_std::rand::thread_rng;
+use rand::Rng;
+use sha2::Sha256;
+
+use crate::ProxySignature;
+
+pub struct AN23ProxySignature<G: CurveGroup> {
+    _marker: std::marker::PhantomData<G>,
+}
+
+impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
+    type Parameters = Parameters<G>;
+    type SigningKey = SigningKey<G>;
+    type VerificationKey = VerificationKey<G>;
+    type Policy = Policy;
+    type DelegationSpec = DelegationSpec;
+    type DelegationInfo = Vec<SigningToken<G>>;
+    type RevocationKey = Vec<G::ScalarField>;
+    type RevocationState = Vec<G::ScalarField>;
+    type Signature = Signature<G>;
+
+    fn setup<R: rand::Rng>(_rng: &mut R) -> Result<Self::Parameters, crate::Error> {
+        let generator = G::generator();
+
+        Ok(Parameters { generator })
+    }
+
+    fn keygen<R: rand::Rng>(
+        rng: &mut R,
+        parameters: &Self::Parameters,
+    ) -> Result<(Self::SigningKey, Self::VerificationKey), crate::Error> {
+        let signing_key = G::ScalarField::rand(rng);
+        let verification_key = parameters.generator.mul(signing_key).into();
+
+        Ok((SigningKey(signing_key), verification_key))
+    }
+
+    fn sign<R: Rng>(
+        rng: &mut R,
+        parameters: &Self::Parameters,
+        sk: &Self::SigningKey,
+        message: &[u8],
+        _policy: Option<&Self::Policy>,
+    ) -> Result<Self::Signature, crate::Error> {
+        let vk = parameters.generator.mul(sk.0).into();
+        let signing_token = Self::generate_delegation_token(rng, parameters, sk, &vk)?;
+
+        Self::delegated_sign(rng, parameters, &vec![signing_token], message)
+    }
+
+    fn delegate<R: Rng>(
+        rng: &mut R,
+        parameters: &Self::Parameters,
+        sk: &Self::SigningKey,
+        _deg_spec: &Self::DelegationSpec,
+    ) -> Result<(Self::DelegationInfo, Self::RevocationKey), crate::Error> {
+        let vk = parameters.generator.mul(sk.0).into();
+        let signing_token = Self::generate_delegation_token(rng, parameters, sk, &vk)?;
+
+        Ok((vec![signing_token.clone()], vec![signing_token.m0]))
+    }
+
+    fn delegated_sign<R: Rng>(
+        rng: &mut R,
+        parameters: &Self::Parameters,
+        delegation_info: &Self::DelegationInfo,
+        message: &[u8],
+    ) -> Result<Self::Signature, crate::Error> {
+        let signing_token = delegation_info.get(0).ok_or(crate::Error::InvalidToken)?;
+
+        // Second layer, uses z0 as signing key, signs real message m1;
+        let Z0 = parameters.generator.mul(signing_token.z0);
+        let r1 = G::ScalarField::rand(rng); // e
+        let R1 = parameters.generator.mul(r1);
+        let c1 = hash::<G>(vec![
+            &Message::Bytes(message.to_vec()),
+            &Message::Curve(Z0.into()),
+            &Message::Curve(R1.into()),
+        ]); // c
+        let z1 = r1 + c1 * signing_token.z0; // s
+
+        let sigma = Sigma {
+            c0: signing_token.c0,
+            c1,
+            z1,
+        };
+        let theta = Theta {
+            m0: signing_token.m0,
+            Z0,
+        };
+
+        Ok(Signature { sigma, theta })
+    }
+
+    fn revoke(
+        parameters: &Self::Parameters,
+        delegation_info: &Self::DelegationInfo,
+        rev_key: &Self::RevocationKey,
+    ) -> Result<Self::RevocationState, crate::Error> {
+        todo!()
+    }
+
+    fn verify(
+        parameters: &Self::Parameters,
+        vk: &Self::VerificationKey,
+        message: &[u8],
+        signature: &Self::Signature,
+        _rev_state: &mut Self::RevocationState,
+    ) -> Result<bool, crate::Error> {
+        //       R0 = Z0 + [-c0]X
+        // => [r0]G = [z0]G - [c0 * x] G
+        // =>    z0 = r0 + c0 * x
+        let R0 = signature.theta.Z0 + vk.clone() * -signature.sigma.c0; // R
+        //       R1 = [z1]G + [-c1]Z0
+        // => [r1]G = [z1]G + [-c1 * z0]G
+        // =>    z1 = r1 + c1 * z0
+        let R1 = parameters.generator.mul(signature.sigma.z1)
+            + signature.theta.Z0.mul(-signature.sigma.c1); // E
+
+        if signature.sigma.c0
+            != hash::<G>(vec![
+                &Message::Field(signature.theta.m0),
+                &Message::Curve(vk.clone()), // [x]G
+                &Message::Curve(R0.into()),  // [r0]G
+            ])
+        {
+            return Ok(false);
+        }
+
+        if signature.sigma.c1
+            != hash::<G>(vec![
+                &Message::Bytes(message.to_vec()),
+                &Message::Curve(signature.theta.Z0.into()),
+                &Message::Curve(R1.into()),
+            ])
+        {
+            return Ok(false);
+        }
+
+        Ok(true)
+    }
+}
+
+impl<G: CurveGroup> AN23ProxySignature<G> {
+    fn generate_delegation_token<R: Rng>(
+        rng: &mut R,
+        parameters: &Parameters<G>,
+        sk: &SigningKey<G>,
+        vk: &VerificationKey<G>,
+    ) -> Result<SigningToken<G>, crate::Error> {
+        let m0 = G::ScalarField::rand(rng); // k
+        let r0 = G::ScalarField::rand(rng); // r
+        let R0 = parameters.generator.mul(r0);
+        let c0 = hash::<G>(vec![
+            &Message::Field(m0),
+            &Message::Curve(vk.clone()), // [x]G
+            &Message::Curve(R0.into()),
+        ]); // w
+        let z0 = r0 + c0 * sk.0; // z
+
+        Ok(SigningToken { z0, c0, m0 })
+    }
+}
+
+pub struct Parameters<G: CurveGroup> {
+    pub generator: G,
+}
+
+#[derive(Clone, Default, Debug, CanonicalSerialize, CanonicalDeserialize)]
+pub struct SigningKey<G: CurveGroup>(pub G::ScalarField);
+
+pub type VerificationKey<G> = <G as CurveGroup>::Affine;
+
+pub struct Policy {
+    pub amount: u64, // The amount of delegation allowed
+}
+
+pub struct DelegationSpec {
+    pub number_of_tokens: u64,
+}
+
+/// A token produced by the original signer and user by the proxy to produce a signature.
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
+pub struct SigningToken<G: CurveGroup> {
+    z0: G::ScalarField, // z
+    c0: G::ScalarField, // w
+    m0: G::ScalarField, // k
+}
+
+/// A AN23 signature. Can be produced by either the original signer or the proxy.
+pub struct Signature<G: CurveGroup> {
+    sigma: Sigma<G::ScalarField>,
+    theta: Theta<G>,
+}
+
+struct Sigma<F: Field> {
+    c0: F,
+    c1: F,
+    z1: F,
+}
+
+struct Theta<G: CurveGroup> {
+    m0: G::ScalarField,
+    Z0: G,
+}
+
+enum Message<G: CurveGroup> {
+    Field(G::ScalarField),
+    Curve(G::Affine),
+    Bytes(Vec<u8>),
+}
+
+impl<G: CurveGroup> Message<G> {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Field(value) => value.into_bigint().to_bytes_be(),
+            Self::Curve(point) => {
+                let mut uncompressed_bytes = Vec::new();
+                point
+                    .serialize_uncompressed(&mut uncompressed_bytes)
+                    .unwrap();
+
+                uncompressed_bytes
+            }
+            Self::Bytes(bytes) => bytes.clone(),
+        }
+    }
+}
+
+fn hash<G: CurveGroup>(message: Vec<&Message<G>>) -> G::ScalarField {
+    let hasher = <DefaultFieldHasher<Sha256> as HashToField<G::ScalarField>>::new(&[]);
+    let preimage = message
+        .iter()
+        .map(|m| m.to_bytes())
+        .flatten()
+        .collect::<Vec<_>>();
+    let hashes: [G::ScalarField; 1] = hasher.hash_to_field(&preimage);
+    hashes[0]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_bn254::{Fr, G1Projective};
+    use ark_std::test_rng;
+
+    #[test]
+    fn test_an23_proxy_signature_vanilla() {
+        let mut rng = test_rng();
+        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+
+        let message = b"Hello, world!";
+        let signature =
+            AN23ProxySignature::<G1Projective>::sign(&mut rng, &parameters, &sk, message, None)
+                .unwrap();
+
+        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+            &parameters,
+            &vk,
+            message,
+            &signature,
+            &mut vec![],
+        )
+        .unwrap();
+
+        assert!(verifier_decision);
+    }
+
+    #[test]
+    fn test_an23_proxy_signature_with_delegation() {
+        let mut rng = test_rng();
+        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+
+        let (delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+            &mut rng,
+            &parameters,
+            &sk,
+            &DelegationSpec {
+                number_of_tokens: 1,
+            },
+        )
+        .unwrap();
+
+        let message = b"Hello, world!";
+
+        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+            &mut rng,
+            &parameters,
+            &delegation_info,
+            message,
+        )
+        .unwrap();
+
+        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+            &parameters,
+            &vk,
+            message,
+            &signature,
+            &mut vec![],
+        )
+        .unwrap();
+
+        assert!(verifier_decision);
+    }
+}

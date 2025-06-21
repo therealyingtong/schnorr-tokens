@@ -393,6 +393,7 @@ dependencies = [
  "ark-bn254",
  "ark-ec",
  "ark-ff",
+ "ark-serialize",
  "ark-std",
  "rand",
  "sha2",
