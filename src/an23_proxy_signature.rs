@@ -4,11 +4,10 @@ use ark_ff::{
     field_hashers::{DefaultFieldHasher, HashToField},
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::rand::thread_rng;
 use rand::Rng;
 use sha2::Sha256;
 
-use crate::ProxySignature;
+use crate::{Error, ProxySignature};
 
 pub struct AN23ProxySignature<G: CurveGroup> {
     _marker: std::marker::PhantomData<G>,
@@ -18,6 +17,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     type Parameters = Parameters<G>;
     type SigningKey = SigningKey<G>;
     type VerificationKey = VerificationKey<G>;
+    type Message = G::ScalarField;
     type Policy = Policy;
     type DelegationSpec = DelegationSpec;
     type DelegationInfo = Vec<SigningToken<G>>;
@@ -45,7 +45,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         rng: &mut R,
         parameters: &Self::Parameters,
         sk: &Self::SigningKey,
-        message: &[u8],
+        message: &Self::Message,
         _policy: Option<&Self::Policy>,
     ) -> Result<Self::Signature, crate::Error> {
         let vk = parameters.generator.mul(sk.0).into();
@@ -70,7 +70,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         rng: &mut R,
         parameters: &Self::Parameters,
         delegation_info: &Self::DelegationInfo,
-        message: &[u8],
+        message: &Self::Message,
     ) -> Result<Self::Signature, crate::Error> {
         let signing_token = delegation_info.get(0).ok_or(crate::Error::InvalidToken)?;
 
@@ -79,7 +79,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         let r1 = G::ScalarField::rand(rng); // e
         let R1 = parameters.generator.mul(r1);
         let c1 = hash::<G>(vec![
-            &Message::Bytes(message.to_vec()),
+            &Message::Field(message.clone()),
             &Message::Curve(Z0.into()),
             &Message::Curve(R1.into()),
         ]); // c
@@ -109,10 +109,16 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     fn verify(
         parameters: &Self::Parameters,
         vk: &Self::VerificationKey,
-        message: &[u8],
+        message: &Self::Message,
         signature: &Self::Signature,
-        _rev_state: &mut Self::RevocationState,
+        rev_state: &mut Self::RevocationState,
     ) -> Result<bool, crate::Error> {
+        for &nonce in rev_state.iter() {
+            if signature.theta.m0 == nonce {
+                return Err(Error::UseOfRevokedToken); // Token is revoked
+            }
+        }
+
         //       R0 = Z0 + [-c0]X
         // => [r0]G = [z0]G - [c0 * x] G
         // =>    z0 = r0 + c0 * x
@@ -135,13 +141,15 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
 
         if signature.sigma.c1
             != hash::<G>(vec![
-                &Message::Bytes(message.to_vec()),
+                &Message::Field(message.clone()),
                 &Message::Curve(signature.theta.Z0.into()),
                 &Message::Curve(R1.into()),
             ])
         {
             return Ok(false);
         }
+
+        rev_state.push(signature.theta.m0);
 
         Ok(true)
     }
@@ -256,15 +264,16 @@ mod tests {
         let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
 
-        let message = b"Hello, world!";
+        let message = Fr::rand(&mut rng);
+
         let signature =
-            AN23ProxySignature::<G1Projective>::sign(&mut rng, &parameters, &sk, message, None)
+            AN23ProxySignature::<G1Projective>::sign(&mut rng, &parameters, &sk, &message, None)
                 .unwrap();
 
         let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
             &parameters,
             &vk,
-            message,
+            &message,
             &signature,
             &mut vec![],
         )
@@ -289,20 +298,20 @@ mod tests {
         )
         .unwrap();
 
-        let message = b"Hello, world!";
+        let message = Fr::rand(&mut rng);
 
         let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
             &mut rng,
             &parameters,
             &delegation_info,
-            message,
+            &message,
         )
         .unwrap();
 
         let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
             &parameters,
             &vk,
-            message,
+            &message,
             &signature,
             &mut vec![],
         )

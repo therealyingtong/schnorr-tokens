@@ -8,12 +8,14 @@ pub enum Error {
     InvalidSignature,
     InvalidToken,
     DelegationFailed,
+    UseOfRevokedToken,
 }
 
 pub trait ProxySignature {
     type Parameters;
     type SigningKey;
     type VerificationKey;
+    type Message;
     type Policy;
     type DelegationSpec;
     type DelegationInfo;
@@ -32,7 +34,7 @@ pub trait ProxySignature {
         rng: &mut R,
         parameters: &Self::Parameters,
         sk: &Self::SigningKey,
-        message: &[u8],
+        message: &Self::Message,
         policy: Option<&Self::Policy>,
     ) -> Result<Self::Signature, Error>;
 
@@ -47,7 +49,7 @@ pub trait ProxySignature {
         rng: &mut R,
         parameters: &Self::Parameters,
         delegation_info: &Self::DelegationInfo,
-        message: &[u8],
+        message: &Self::Message,
     ) -> Result<Self::Signature, Error>;
 
     fn revoke(
@@ -59,7 +61,7 @@ pub trait ProxySignature {
     fn verify(
         parameters: &Self::Parameters,
         vk: &Self::VerificationKey,
-        message: &[u8],
+        message: &Self::Message,
         signature: &Self::Signature,
         rev_state: &mut Self::RevocationState,
     ) -> Result<bool, Error>;
