@@ -213,9 +213,9 @@ pub struct DelegationSpec {
 /// A token produced by the original signer and user by the proxy to produce a signature.
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct SigningToken<G: CurveGroup> {
-    z0: G::ScalarField, // z
-    c0: G::ScalarField, // w
-    m0: G::ScalarField, // k
+    pub z0: G::ScalarField, // z
+    pub c0: G::ScalarField, // w
+    pub m0: G::ScalarField, // k
 }
 
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
