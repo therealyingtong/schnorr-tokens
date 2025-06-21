@@ -32,9 +32,9 @@ Additional properties:
 
 ## Applications
 
-We wrote an [Aztec account contract](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/write_accounts_contract) that verifies a proxy signature to authorize transactions.
+We wrote a Noir verifier for the proxy signature scheme. By plugging it to an [Aztec account contract](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/write_accounts_contract), we can use the (potentially) delegated signature to authorize transactions.
 
-This enables multiple types of applications:
+This enables multiple types of applications including:
 - on-chain **company card**. A company can have a single master wallet and delegate spending capability to its employees. Each employee can be limited in the number of transactions they produce, where they send their payments and the amount they are allowed to spend. The anonymity and privacy of the policy allows to maintain some secrecy as to who can spend what or how budget is allocated.
 - on-chain **pocket money**, without creating new wallets. Parents can give virtual pocket money to their children without given the children access to / control of a fully-fledged wallet. The pocket money can also be revoked if the kids are grounded :(
 
