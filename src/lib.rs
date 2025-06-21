@@ -1,6 +1,6 @@
 use ark_ec::{AffineRepr, CurveGroup, PrimeGroup};
 use ark_ff::{BigInteger, PrimeField};
-use ark_grumpkin::Projective;
+use ark_grumpkin::Fq;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::{Rng};
 use rand::rngs::OsRng;
@@ -95,25 +95,54 @@ pub trait ProxySignature {
     ) -> Result<bool, Error>;
 }
 
+#[wasm_bindgen]
+#[derive(Clone)]
+struct Fr {
+    bytes: Vec<u8>,
+}
+
+impl From<ark_grumpkin::Fr> for Fr {
+    fn from(value: ark_grumpkin::Fr) -> Self {
+        Fr {
+            bytes: value.into_bigint().to_bytes_le()
+        }
+    }
+}
+
+impl From<Fr> for ark_grumpkin::Fr {
+    fn from(value: Fr) -> Self {
+        let mut bytes = value.bytes;
+        ark_grumpkin::Fr::from_le_bytes_mod_order(&bytes)
+    }
+}
 
 #[wasm_bindgen]
+#[derive(Clone)]
 struct CurvePoint {
-    x : Vec<u8>,
-    y : Vec<u8>,
+    x: Vec<u8>,
+    y: Vec<u8>,
 }
 
 impl From<ark_grumpkin::Projective> for CurvePoint {
-    fn from(value: Projective) -> Self {
+    fn from(value: ark_grumpkin::Projective) -> Self {
         let aff = value.into_affine();
         CurvePoint {
-            x : aff.x().unwrap().into_bigint().to_bytes_le(),
-            y : aff.y().unwrap().into_bigint().to_bytes_le()
+            x: aff.x().unwrap().into_bigint().to_bytes_le(),
+            y: aff.y().unwrap().into_bigint().to_bytes_le(),
         }
+    }
+}
+
+impl From<CurvePoint> for ark_grumpkin::Projective {
+    fn from(value: CurvePoint) -> Self {
+        let x = Fq::from_le_bytes_mod_order(&value.x);
+        let y = Fq::from_le_bytes_mod_order(&value.y);
+        ark_grumpkin::Affine::new(x, y).into()
     }
 }
 
 #[wasm_bindgen]
 pub fn setup() -> CurvePoint {
     let mut rng = OsRng;
-    AN23ProxySignature::<Projective>::setup(&mut rng).unwrap().generator.into()
+    AN23ProxySignature::<ark_grumpkin::Projective>::setup(&mut rng).unwrap().generator.into()
 }
