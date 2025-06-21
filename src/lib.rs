@@ -1,5 +1,10 @@
+use ark_ec::{AffineRepr, CurveGroup, PrimeGroup};
+use ark_ff::{BigInteger, PrimeField};
+use ark_grumpkin::Projective;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use rand::Rng;
+use rand::{Rng};
+use wasm_bindgen::prelude::wasm_bindgen;
+use crate::an23_proxy_signature::AN23ProxySignature;
 
 pub mod an23_proxy_signature;
 pub mod noir_utils;
@@ -87,4 +92,26 @@ pub trait ProxySignature {
         signature: &Self::Signature,
         rev_state: &mut Self::RevocationState,
     ) -> Result<bool, Error>;
+}
+
+
+#[wasm_bindgen]
+struct CurvePoint {
+    x : Vec<u8>,
+    y : Vec<u8>,
+}
+
+impl From<ark_grumpkin::Projective> for CurvePoint {
+    fn from(value: Projective) -> Self {
+        let aff = value.into_affine();
+        CurvePoint {
+            x : aff.x().unwrap().into_bigint().to_bytes_le(),
+            y : aff.y().unwrap().into_bigint().to_bytes_le()
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub fn setup() -> CurvePoint {
+    Projective::generator().into()
 }

@@ -6,8 +6,6 @@ use ark_ff::{
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use blake2::{Blake2s256, Digest};
 use rand::Rng;
-use sha2::Sha256;
-
 use crate::{Error, ProxySignature};
 
 pub struct AN23ProxySignature<G: CurveGroup> {
@@ -290,11 +288,10 @@ mod tests {
         grumpkin_fr_to_nr_code, grumpkin_point_to_nr_code, grumpkin_sig_to_nr_code,
     };
     use ark_grumpkin::{Fr, Projective};
-    use ark_std::test_rng;
-    use rand::thread_rng;
 
     #[test]
     fn test_an23_proxy_signature_vanilla() {
+        use ark_std::test_rng;
         let mut rng = test_rng();
         let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
@@ -319,6 +316,7 @@ mod tests {
 
     #[test]
     fn test_an23_proxy_signature_with_delegation() {
+        use ark_std::test_rng;
         let mut rng = test_rng();
         let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
@@ -357,6 +355,7 @@ mod tests {
 
     #[test]
     fn test_verifier_revocation() {
+        use ark_std::test_rng;
         let mut rng = test_rng();
         let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
@@ -410,6 +409,7 @@ mod tests {
 
     #[test]
     fn test_issuer_revocation() {
+        use ark_std::test_rng;
         let mut rng = test_rng();
         let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
