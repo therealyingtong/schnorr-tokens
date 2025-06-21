@@ -26,7 +26,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     type Signature = Signature<G>;
 
     fn setup<R: rand::Rng>(_rng: &mut R) -> Result<Self::Parameters, crate::Error> {
-        let generator = G::generator();
+        let generator = G::generator(); // TODO use the generator from NOIR.
 
         Ok(Parameters { generator })
     }
@@ -102,7 +102,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         _parameters: &Self::Parameters,
         _delegation_info: &Self::DelegationInfo,
         rev_key: &Self::RevocationKey,
-        rev_state: &mut Self::RevocationState
+        rev_state: &mut Self::RevocationState,
     ) -> Result<(), crate::Error> {
         rev_state.extend(rev_key.iter().cloned());
         Ok(())
@@ -372,10 +372,7 @@ mod tests {
             &signature,
             &mut rev_state,
         );
-        assert_eq!(
-            second_verifier_decision,
-            Err(Error::UseOfRevokedToken)
-        ); // Should fail due to revocation
+        assert_eq!(second_verifier_decision, Err(Error::UseOfRevokedToken)); // Should fail due to revocation
     }
 
     #[test]
@@ -404,7 +401,8 @@ mod tests {
             &delegation_info,
             &rev_key,
             &mut rev_state,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Sign after revocation
         let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
