@@ -1,4 +1,4 @@
-use std::{embedded_curve_ops::{multi_scalar_mul, EmbeddedCurveScalar, EmbeddedCurvePoint}, hash::{blake2s, poseidon2_permutation}};
+use std::{embedded_curve_ops::{multi_scalar_mul, EmbeddedCurveScalar, EmbeddedCurvePoint}, hash::{blake2s}};
 
 struct Sigma {
     c0: EmbeddedCurveScalar,

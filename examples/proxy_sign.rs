@@ -3,7 +3,7 @@ use ark_grumpkin::{Fr as GrumpkinScalar, Projective as GrumpkinCurve};
 use ark_serialize::CanonicalDeserialize;
 use rand::rngs::OsRng;
 use schnorr_tokens::ProxySignature;
-use schnorr_tokens::an23_proxy_signature::{AN23ProxySignature, DelegationSpec};
+use schnorr_tokens::an23_proxy_signature::{AN23ProxySignature};
 use std::fs::File;
 use std::io::Read;
 

@@ -1,16 +1,14 @@
 use crate::ProxySignature;
 use crate::an23_proxy_signature::{AN23ProxySignature, DelegationSpec, Parameters, SigningKey};
-use ark_ec::{AffineRepr, CurveGroup, PrimeGroup};
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInteger, PrimeField};
 use ark_grumpkin::Fq;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use rand::Rng;
 use rand::rngs::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
 #[derive(Clone)]
-struct Fr {
+pub struct Fr {
     bytes: Vec<u8>,
 }
 
@@ -38,7 +36,7 @@ impl From<&Fr> for ark_grumpkin::Fr {
 
 #[wasm_bindgen]
 #[derive(Clone)]
-struct CurvePoint {
+pub struct CurvePoint {
     x: Vec<u8>,
     y: Vec<u8>,
 }
@@ -88,7 +86,7 @@ pub fn setup() -> CurvePoint {
 
 #[wasm_bindgen]
 #[derive(Clone)]
-struct Keypair {
+pub struct Keypair {
     sk: Fr,
     vk: CurvePoint,
 }
@@ -185,7 +183,7 @@ pub fn sign(params: &CurvePoint, sk: &Fr, message: &Fr, policy: Option<u64>) -> 
 
 #[wasm_bindgen]
 #[derive(Clone)]
-struct SigningToken {
+pub struct SigningToken {
     z0: Fr,
     c0: Fr,
     m0: Fr,
@@ -227,7 +225,7 @@ impl From<&SigningToken> for crate::an23_proxy_signature::SigningToken<ark_grump
 }
 
 #[wasm_bindgen]
-struct DelegationRes {
+pub struct DelegationRes {
     delegation_info: Vec<SigningToken>,
     revokation_key: Vec<Fr>,
 }

@@ -48,6 +48,19 @@ This enables multiple types of applications:
 - A Noir circuit for signature verification in [`verifier/src/main.nr`](https://github.com/therealyingtong/schnorr-tokens/blob/main/verifier/src/main.nr).
 
 ## How to run the examples
+
+You can run the pure-Rust examples as follows:
+1. run the `delegate` example. This will create public parameters, a public key and a delegation token.
+```shell
+cargo run --example delegate    
+```
+2. run the `proxy_sign` example. This imports the files you created above, signs using the delegation token and verifies the signature.
+```shell
+cargo run --example proxy_sign    
+```
+
+## Compiling to WASM
+
 Instructions to compile to WASM:
 - install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) 
 - run `RUSTFLAGS='--cfg getrandom_backend="wasm_js"' wasm-pack build --target nodejs`

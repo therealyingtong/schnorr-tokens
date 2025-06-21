@@ -1,7 +1,6 @@
 use crate::an23_proxy_signature::Signature;
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::PrimeField;
-use ark_grumpkin::{Fr, Projective};
 
 pub fn grumpkin_fr_to_nr_code(fr: ark_grumpkin::Fr) -> String {
     let bi = fr.into_bigint().0;

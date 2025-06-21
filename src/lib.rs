@@ -1,3 +1,5 @@
+#![allow(non_snake_case, dead_code)]
+
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::Rng;
 

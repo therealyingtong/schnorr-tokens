@@ -2,7 +2,6 @@ use crate::{Error, ProxySignature};
 use ark_ec::CurveGroup;
 use ark_ff::{
     BigInteger, Field, PrimeField, UniformRand,
-    field_hashers::{DefaultFieldHasher, HashToField},
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use blake2::{Blake2s256, Digest};
