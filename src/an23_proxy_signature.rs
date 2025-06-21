@@ -288,6 +288,7 @@ mod tests {
         grumpkin_fr_to_nr_code, grumpkin_point_to_nr_code, grumpkin_sig_to_nr_code,
     };
     use ark_grumpkin::{Fr, Projective};
+    use ark_std::test_rng;
 
     #[test]
     fn test_an23_proxy_signature_vanilla() {
@@ -459,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_grumpkin() {
-        let mut rng = thread_rng();
+        let mut rng = test_rng();
 
         let m = Fr::rand(&mut rng);
 
