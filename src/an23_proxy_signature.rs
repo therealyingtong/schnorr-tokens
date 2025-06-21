@@ -50,28 +50,36 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
         let vk = parameters.generator.mul(sk.0).into();
         let signing_token = Self::generate_delegation_token(rng, parameters, sk, &vk)?;
 
-        Self::delegated_sign(rng, parameters, &vec![signing_token], message)
+        Self::delegated_sign(rng, parameters, &mut vec![signing_token], message)
     }
 
     fn delegate<R: Rng>(
         rng: &mut R,
         parameters: &Self::Parameters,
         sk: &Self::SigningKey,
-        _deg_spec: &Self::DelegationSpec,
+        deg_spec: &Self::DelegationSpec,
     ) -> Result<(Self::DelegationInfo, Self::RevocationKey), crate::Error> {
         let vk = parameters.generator.mul(sk.0).into();
-        let signing_token = Self::generate_delegation_token(rng, parameters, sk, &vk)?;
 
-        Ok((vec![signing_token.clone()], vec![signing_token.m0]))
+        let mut delegation_info = Vec::new();
+        let mut rev_key = Vec::new();
+
+        for _ in 0..deg_spec.number_of_tokens {
+            let signing_token = Self::generate_delegation_token(rng, parameters, sk, &vk)?;
+            rev_key.push(signing_token.m0); // Store m0 as revocation key
+            delegation_info.push(signing_token);
+        }
+
+        Ok((delegation_info, rev_key))
     }
 
     fn delegated_sign<R: Rng>(
         rng: &mut R,
         parameters: &Self::Parameters,
-        delegation_info: &Self::DelegationInfo,
+        delegation_info: &mut Self::DelegationInfo,
         message: &Self::Message,
     ) -> Result<Self::Signature, crate::Error> {
-        let signing_token = delegation_info.get(0).ok_or(crate::Error::InvalidToken)?;
+        let signing_token = delegation_info.pop().ok_or(Error::NoDelegationToken)?;
 
         // Second layer, uses z0 as signing key, signs real message m1;
         let Z0 = parameters.generator.mul(signing_token.z0);
@@ -293,12 +301,12 @@ mod tests {
         let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
         let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
 
-        let (delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
             &DelegationSpec {
-                number_of_tokens: 1,
+                number_of_tokens: 5,
             },
         )
         .unwrap();
@@ -308,7 +316,7 @@ mod tests {
         let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
             &mut rng,
             &parameters,
-            &delegation_info,
+            &mut delegation_info,
             &message,
         )
         .unwrap();
@@ -333,12 +341,12 @@ mod tests {
 
         let mut rev_state = Vec::new(); // Initialize an empty revocation state
 
-        let (delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
             &DelegationSpec {
-                number_of_tokens: 1,
+                number_of_tokens: 5,
             },
         )
         .unwrap();
@@ -348,7 +356,7 @@ mod tests {
         let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
             &mut rng,
             &parameters,
-            &delegation_info,
+            &mut delegation_info,
             &message,
         )
         .unwrap();
@@ -386,12 +394,12 @@ mod tests {
 
         let mut rev_state = Vec::new(); // Initialize an empty revocation state
 
-        let (delegation_info, rev_key) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, rev_key) = AN23ProxySignature::<G1Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
             &DelegationSpec {
-                number_of_tokens: 1,
+                number_of_tokens: 5,
             },
         )
         .unwrap();
@@ -411,7 +419,7 @@ mod tests {
         let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
             &mut rng,
             &parameters,
-            &delegation_info,
+            &mut delegation_info,
             &message,
         )
         .unwrap();

@@ -10,6 +10,7 @@ pub enum Error {
     InvalidToken,
     DelegationFailed,
     UseOfRevokedToken,
+    NoDelegationToken
 }
 
 /// Interface for a proxy signature scheme as defined in [AN23](https://eprint.iacr.org/2023/833).
@@ -24,7 +25,7 @@ pub trait ProxySignature {
     type Message;
     /// The type of policy that can be used to restrict the delegation.
     type Policy;
-    /// The type of delegation specification that defines how the delegation should be performed.
+    /// Auxiliary information about the delegation. For example: the number of authorized proxy signatures, the time period during which the delegation is valid (if using timelock encryption), etc.
     type DelegationSpec;
     /// Delegation information used by a proxy to sign messages on behalf of the delegator. Anyone with this information can sign messages on behalf of the delegator; treat with care!
     type DelegationInfo;
@@ -61,11 +62,11 @@ pub trait ProxySignature {
         deg_spec: &Self::DelegationSpec,
     ) -> Result<(Self::DelegationInfo, Self::RevocationKey), Error>;
 
-    /// The proxy signer can use the delegation information to sign messages on behalf of the delegator.
+    /// The proxy signer can use the delegation information to sign messages on behalf of the delegator. The delegation info gets updated to remove any information that cannot be re-used.
     fn delegated_sign<R: Rng>(
         rng: &mut R,
         parameters: &Self::Parameters,
-        delegation_info: &Self::DelegationInfo,
+        delegation_info: &mut Self::DelegationInfo,
         message: &Self::Message,
     ) -> Result<Self::Signature, Error>;
 
