@@ -26,8 +26,7 @@ impl<G: CurveGroup> ProxySignature for AN23ProxySignature<G> {
     type Signature = Signature<G>;
 
     fn setup<R: rand::Rng>(_rng: &mut R) -> Result<Self::Parameters, crate::Error> {
-        let generator = G::generator(); // TODO use the generator from NOIR.
-
+        let generator = G::generator();
         Ok(Parameters { generator })
     }
 
