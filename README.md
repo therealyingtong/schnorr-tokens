@@ -4,7 +4,7 @@
 
 Our project has two contributions:
 1. New crypto primitive implementation: anonymous proxy signatures [[AN23]](https://eprint.iacr.org/2023/833). In arkworks and with WASM bindings for in-browser execution.
-2. Toy application: Aztec Wallet with anonymous and undetectable delegation. This is the on-chain equivalent of a blank cheque with some spending restrictions set by the account holder.
+2. Toy application: Aztec Wallet with anonymous and undetectable delegation. This enables applications like on-chain company cards or on-chain pocket money.
 
 
 ## Anonymous proxy signatures
@@ -30,13 +30,13 @@ Additional properties:
 > 
 > Verification checks that the layers are consistent between each other and with the token $k$. By keeping a list of spent tokens, the verifier can enforce that token are one-time use.
 
-## Application
+## Applications
 
 We wrote an [Aztec account contract](https://docs.aztec.network/developers/tutorials/codealong/contract_tutorials/write_accounts_contract) that verifies a proxy signature to authorize transactions.
 
 This enables multiple types of applications:
-- on-chain company card. A company can have a single master wallet and delegate spending capability to its employees. Each employee can be limited in the number of transactions they produce, where they send their payments and the amount they are allowed to spend. The anonymity and privacy of the policy allows to maintain some secrecy as to who can spend what or how budget is allocated.
-- on-chain pocket money, without creating new wallets. Parents can give virtual pocket money to their children without given the children access to / control of a fully-fledged wallet. The pocket money can also be revoked if the kids are grounded :(
+- on-chain **company card**. A company can have a single master wallet and delegate spending capability to its employees. Each employee can be limited in the number of transactions they produce, where they send their payments and the amount they are allowed to spend. The anonymity and privacy of the policy allows to maintain some secrecy as to who can spend what or how budget is allocated.
+- on-chain **pocket money**, without creating new wallets. Parents can give virtual pocket money to their children without given the children access to / control of a fully-fledged wallet. The pocket money can also be revoked if the kids are grounded :(
 
 ![image](https://github.com/therealyingtong/schnorr-tokens/blob/main/readme_diagrams/spending.jpg?raw=true)
 
