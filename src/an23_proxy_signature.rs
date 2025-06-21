@@ -268,22 +268,22 @@ fn hash<G: CurveGroup>(message: Vec<&Message<G>>) -> G::ScalarField {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bn254::{Fr, G1Projective};
+    use ark_grumpkin::{Fr, Projective};
     use ark_std::test_rng;
 
     #[test]
     fn test_an23_proxy_signature_vanilla() {
         let mut rng = test_rng();
-        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
-        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+        let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
 
         let message = Fr::rand(&mut rng);
 
         let signature =
-            AN23ProxySignature::<G1Projective>::sign(&mut rng, &parameters, &sk, &message, None)
+            AN23ProxySignature::<Projective>::sign(&mut rng, &parameters, &sk, &message, None)
                 .unwrap();
 
-        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+        let verifier_decision = AN23ProxySignature::<Projective>::verify(
             &parameters,
             &vk,
             &message,
@@ -298,10 +298,10 @@ mod tests {
     #[test]
     fn test_an23_proxy_signature_with_delegation() {
         let mut rng = test_rng();
-        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
-        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+        let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
 
-        let (mut delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, _) = AN23ProxySignature::<Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
@@ -313,7 +313,7 @@ mod tests {
 
         let message = Fr::rand(&mut rng);
 
-        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+        let signature = AN23ProxySignature::<Projective>::delegated_sign(
             &mut rng,
             &parameters,
             &mut delegation_info,
@@ -321,7 +321,7 @@ mod tests {
         )
         .unwrap();
 
-        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+        let verifier_decision = AN23ProxySignature::<Projective>::verify(
             &parameters,
             &vk,
             &message,
@@ -336,12 +336,12 @@ mod tests {
     #[test]
     fn test_verifier_revocation() {
         let mut rng = test_rng();
-        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
-        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+        let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
 
         let mut rev_state = Vec::new(); // Initialize an empty revocation state
 
-        let (mut delegation_info, _) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, _) = AN23ProxySignature::<Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
@@ -353,7 +353,7 @@ mod tests {
 
         let message = Fr::rand(&mut rng);
 
-        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+        let signature = AN23ProxySignature::<Projective>::delegated_sign(
             &mut rng,
             &parameters,
             &mut delegation_info,
@@ -362,7 +362,7 @@ mod tests {
         .unwrap();
 
         // Verify the signature once and change revocation state
-        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+        let verifier_decision = AN23ProxySignature::<Projective>::verify(
             &parameters,
             &vk,
             &message,
@@ -376,7 +376,7 @@ mod tests {
         assert!(rev_state.len() == 1); // Ensure revocation state has one entry
 
         // Now, try to verify the same signature again, which should fail due to revocation
-        let second_verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+        let second_verifier_decision = AN23ProxySignature::<Projective>::verify(
             &parameters,
             &vk,
             &message,
@@ -389,12 +389,12 @@ mod tests {
     #[test]
     fn test_issuer_revocation() {
         let mut rng = test_rng();
-        let parameters = AN23ProxySignature::<G1Projective>::setup(&mut rng).unwrap();
-        let (sk, vk) = AN23ProxySignature::<G1Projective>::keygen(&mut rng, &parameters).unwrap();
+        let parameters = AN23ProxySignature::<Projective>::setup(&mut rng).unwrap();
+        let (sk, vk) = AN23ProxySignature::<Projective>::keygen(&mut rng, &parameters).unwrap();
 
         let mut rev_state = Vec::new(); // Initialize an empty revocation state
 
-        let (mut delegation_info, rev_key) = AN23ProxySignature::<G1Projective>::delegate(
+        let (mut delegation_info, rev_key) = AN23ProxySignature::<Projective>::delegate(
             &mut rng,
             &parameters,
             &sk,
@@ -407,7 +407,7 @@ mod tests {
         let message = Fr::rand(&mut rng);
 
         // Revoke the delegation
-        AN23ProxySignature::<G1Projective>::revoke(
+        AN23ProxySignature::<Projective>::revoke(
             &parameters,
             &delegation_info,
             &rev_key,
@@ -416,7 +416,7 @@ mod tests {
         .unwrap();
 
         // Sign after revocation
-        let signature = AN23ProxySignature::<G1Projective>::delegated_sign(
+        let signature = AN23ProxySignature::<Projective>::delegated_sign(
             &mut rng,
             &parameters,
             &mut delegation_info,
@@ -424,7 +424,7 @@ mod tests {
         )
         .unwrap();
 
-        let verifier_decision = AN23ProxySignature::<G1Projective>::verify(
+        let verifier_decision = AN23ProxySignature::<Projective>::verify(
             &parameters,
             &vk,
             &message,

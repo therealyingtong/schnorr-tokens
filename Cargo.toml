@@ -9,5 +9,5 @@ ark-ff = "0.5.0"
 ark-ec = "0.5.0"
 ark-std = { version = "0.5.0", features = ["getrandom"]}
 ark-serialize = { version = "0.5.0", default-features = false, features = [ "derive" ] }
-ark-bn254 = { version = "0.5.0", default-features = false, features = [ "curve" ] }
+ark-grumpkin = { version = "0.5.0", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["std_rng"]}
