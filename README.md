@@ -45,7 +45,7 @@ This enables multiple types of applications including:
 - Interface for proxy signature schemes over a generic curve (arkworks-style) in [`src/lib.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/2807b045a88bdf2e961096d12dcb9ad361229a44/src/lib.rs#L24-L96).
 - Our implementation of the concrete [AN23] scheme is in [`src/an23_proxy_signature.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/2807b045a88bdf2e961096d12dcb9ad361229a44/src/an23_proxy_signature.rs#L15-L193)
 - WASM bindings for the concrete construction are in [`src/wasm_bindings.rs`](https://github.com/therealyingtong/schnorr-tokens/blob/main/src/wasm_bindings.rs).
-- A Noir circuit for signature verification in [`verifier/src/main.nr`](https://github.com/therealyingtong/schnorr-tokens/blob/main/verifier/src/main.nr).
+- A Noir circuit for signature verification in [`verifier/src/schnorr_token.nr`](https://github.com/therealyingtong/schnorr-tokens/blob/main/verifier/src/schnorr_token.nr).
 
 ## How to run the examples
 
