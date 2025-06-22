@@ -54,6 +54,7 @@ pub contract SimpleToken {
     struct Storage<Context> {
         balances: Map<AztecAddress, BalanceSet<Context>, Context>,
         public_balances: Map<AztecAddress, PublicMutable<u128, Context>, Context>,
+        revoked: Map<EmbeddedCurveScalar, PublicMutable<Field, Context>, Context>
         symbol: PublicImmutable<FieldCompressedString, Context>,
         name: PublicImmutable<FieldCompressedString, Context>,
         decimals: PublicImmutable<u8, Context>,
@@ -90,6 +91,8 @@ pub contract SimpleToken {
         z0_x: Field,
         z0_y: Field,
     ) {
+        assert(storage.revoked.at(EmbeddedCurveScalar::new(m0_lo, m0_hi)).read() == 0, "c0 already used");
+
         let vk = EmbeddedCurvePoint {x: 7257076507064767502048399488283005105690152857237400700739974538328312070936, y: 18075790027769853990372100973781662593406554305622169619400137677165578621371, is_infinite: false};
 
         let msg = EmbeddedCurveScalar::new(msg_lo, msg_hi);
@@ -107,5 +110,9 @@ pub contract SimpleToken {
 
         let to_balance = storage.public_balances.at(to).read().add(amount);
         storage.public_balances.at(to).write(to_balance);
+
+        storage.revoked
+            .at(EmbeddedCurveScalar::new(m0_lo, m0_hi))
+            .write(Field::from(1));
     }
 }
