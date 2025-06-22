@@ -1,129 +1,111 @@
-use std::{embedded_curve_ops::{multi_scalar_mul, EmbeddedCurveScalar, EmbeddedCurvePoint}, hash::{blake2s}};
+mod types;
+mod schnorr_token;
 
-struct Sigma {
-    c0: EmbeddedCurveScalar,
-    c1: EmbeddedCurveScalar,
-    z1: EmbeddedCurveScalar,
-}
+use dep::aztec::macros::aztec;
 
-struct Theta {
-    m0: EmbeddedCurveScalar,
-    Z0: EmbeddedCurvePoint,
-}
+// Minimal token contract. Do not use
+// For demonstration purposes in playground only
+// If you change the names of these functions, please also update them in playground/src/components/contract/contract.ts
 
-struct Signature {
-    sigma: Sigma,
-    theta: Theta,
-}
+#[aztec]
+pub contract SimpleToken {
+    use std::{meta::derive, ops::{Add, Sub}, embedded_curve_ops::{EmbeddedCurveScalar, EmbeddedCurvePoint}};
 
-fn hash_to_field<let N: u32>(input: [u8;N]) -> EmbeddedCurveScalar {
-    let bytes = blake2s(input);
-    let mut hi_bytes = [0; 16];
-    let mut lo_bytes = [0; 16];
-    for i in 0..16 {
-        lo_bytes[i as u32] = bytes[i as u32];
-        hi_bytes[i as u32] = bytes[(i + 16) as u32];
-    }
-    hi_bytes[15] = 0;
-    let lo = Field::from_le_bytes(lo_bytes);
-    let hi = Field::from_le_bytes(hi_bytes);
-    let output = EmbeddedCurveScalar::new(lo, hi);
-    output
-}
+    use dep::compressed_string::FieldCompressedString;
 
-fn hash_fcc(f: EmbeddedCurveScalar, c1: EmbeddedCurvePoint, c2: EmbeddedCurvePoint) -> EmbeddedCurveScalar {
-    let mut data: [u8; 160] = [0; 160];
-    let flo: [u8; 16] = f.lo.to_le_bytes();
-    let cur_pos = 0;
-    for i in 0..16 {
-        data[cur_pos + i as u32] = flo[i as u32];
-    }
-    let cur_pos = cur_pos + 16;
-    let fhi: [u8; 16] = f.hi.to_le_bytes();
-    for i in 0..16 {
-        data[cur_pos + i as u32] = fhi[i as u32];
-    }
-    let cur_pos = cur_pos + 16;
-    let c1_x_bytes: [u8; 32] = c1.x.to_le_bytes();
-    for i in 0..32 {
-        data[cur_pos + i as u32] = c1_x_bytes[i as u32];
-    }
-    let cur_pos = cur_pos + 32;
-    let c1_y_bytes: [u8; 32] = c1.y.to_le_bytes();
-    for i in 0..32 {
-        data[cur_pos + i as u32] = c1_y_bytes[i as u32];
-    }
-    let cur_pos = cur_pos + 32;
-    let c2_x_bytes: [u8; 32] = c2.x.to_le_bytes();
-    for i in 0..32 {
-        data[cur_pos + i as u32] = c2_x_bytes[i as u32];
-    }
-    let cur_pos = cur_pos + 32;
-    let c2_y_bytes: [u8; 32] = c2.y.to_le_bytes();
-    for i in 0..32 {
-        data[cur_pos + i as u32] = c2_y_bytes[i as u32];
-    }
-    hash_to_field(data)
-}
-
-fn verify(msg : EmbeddedCurveScalar, sig: Signature, vk: EmbeddedCurvePoint) {
-    let R0 = sig.theta.Z0 + multi_scalar_mul([-vk], [sig.sigma.c0]);
-    let R1 = multi_scalar_mul([EmbeddedCurvePoint::generator(), -sig.theta.Z0], [sig.sigma.z1, sig.sigma.c1]);
-    assert_eq(sig.sigma.c0, hash_fcc(sig.theta.m0, vk, R0));
-    assert_eq(sig.sigma.c1, hash_fcc(msg, sig.theta.Z0, R1));
-}
-
-#[test]
-fn test_verify() {
-    let vk = EmbeddedCurvePoint {x: 7257076507064767502048399488283005105690152857237400700739974538328312070936, y: 18075790027769853990372100973781662593406554305622169619400137677165578621371, is_infinite: false};
-    let msg = EmbeddedCurveScalar::new(0x8ebb80e28b3b550bb0c896fd707b04a4, 0x1cf11a08c8b67370342a65a130f3a8fd);
-    let sigma = Sigma {
-        c0: EmbeddedCurveScalar::new(0x3c668ab688d8873c75abdf4c072c8d22, 0x6ec948b8ecc10e6fe4c65546e4b6ae),
-        c1: EmbeddedCurveScalar::new(0xc61bc89c55304b620e7c27807ae8f0cf, 0x227646ba5af507d943fb3439ee49ff),
-        z1: EmbeddedCurveScalar::new(0x760c6b393c080a5f8fed35cd0a3b2ac3, 0x5c0ba00326f38773e76adf92597c4cc)
+    use dep::aztec::{
+        context::{PrivateCallInterface, PrivateContext},
+        event::event_interface::EventInterface,
+        macros::{
+            events::event,
+            functions::{initializer, internal, private, public, utility, view},
+            storage::storage,
+        },
+        messages::logs::{
+            event::encode_and_encrypt_event_unconstrained,
+            note::{encode_and_encrypt_note, encode_and_encrypt_note_unconstrained},
+        },
+        prelude::{AztecAddress, Map, PublicContext, PublicImmutable, PublicMutable, PrivateSet},
+        protocol_types::traits::Serialize,
     };
-    let theta = Theta {
-        m0: EmbeddedCurveScalar::new(0xa40d7b071103757c1a03bd319dae9671, 0x2dd9aff98ee54ea96ec1ea12ea7b1515),
-        Z0: EmbeddedCurvePoint {x: 12364409080910505570532105014962964930181657457138259606113159612669888195990, y: 11290227409238322764197919667336681608600871963378008195395309167662119348696, is_infinite: false}
+
+    use dep::uint_note::uint_note::{PartialUintNote, UintNote};
+
+    use dep::authwit::auth::{
+        assert_current_call_valid_authwit, assert_current_call_valid_authwit_public,
+        compute_authwit_nullifier,
     };
-    let sig = Signature { sigma, theta };
-    verify(msg, sig, vk);
 
-}
+    use crate::types::balance_set::BalanceSet;
+    use crate::schnorr_token::{Sigma, Theta, Signature, verify};
 
-#[test]
-fn test_hash_to_field() {
-    let mut slice : [u8;128] = [0;128];
-    for i in 0..128 {
-        slice[i as u32] = i;
+    global INITIAL_TRANSFER_CALL_MAX_NOTES: u32 = 2;
+    global RECURSIVE_TRANSFER_CALL_MAX_NOTES: u32 = 8;
+
+    #[derive(Serialize)]
+    #[event]
+    struct Transfer {
+        from: AztecAddress,
+        to: AztecAddress,
+        amount: u128,
     }
-    print(hash_to_field(slice))
-}
 
-#[test]
-fn blake2_test() {
-    let mut slice : [u8;128] = [0;128];
-    for i in 0..128 {
-        slice[i as u32] = i;
+    #[storage]
+    struct Storage<Context> {
+        balances: Map<AztecAddress, BalanceSet<Context>, Context>,
+        public_balances: Map<AztecAddress, PublicMutable<u128, Context>, Context>,
+        symbol: PublicImmutable<FieldCompressedString, Context>,
+        name: PublicImmutable<FieldCompressedString, Context>,
+        decimals: PublicImmutable<u8, Context>,
     }
-    print(blake2s(slice))
-}
 
-#[test]
-fn hash_to_field_wrong() {
-    let x = hash_to_field([1, 2]);
-    let y = hash_to_field([2, 1]);
-    assert_eq(x, y)
-}
+    #[public]
+    #[initializer]
+    fn constructor(name: str<31>, symbol: str<31>, decimals: u8) {
+        storage.name.initialize(FieldCompressedString::from_string(name));
+        storage.symbol.initialize(FieldCompressedString::from_string(symbol));
+        storage.decimals.initialize(decimals);
+    }
 
-fn main(x: Field, y: pub Field) {
-    assert(x != y);
-}
+    #[public]
+    #[view]
+    fn public_balance_of(owner: AztecAddress) -> u128 {
+        storage.public_balances.at(owner).read()
+    }
+   
+    #[public]
+    fn public_transfer(
+        to: AztecAddress,
+        amount: u128,
+        msg_lo: Field,
+        msg_hi: Field,
+        c0_lo: Field,
+        c0_hi: Field,
+        c1_lo: Field,
+        c1_hi: Field,
+        z1_lo: Field,
+        z1_hi: Field,
+        m0_lo: Field,
+        m0_hi: Field,
+        z0_x: Field,
+        z0_y: Field,
+    ) {
+        let vk = EmbeddedCurvePoint {x: 7257076507064767502048399488283005105690152857237400700739974538328312070936, y: 18075790027769853990372100973781662593406554305622169619400137677165578621371, is_infinite: false};
 
-#[test]
-fn test_main() {
-    main(1, 2);
+        let msg = EmbeddedCurveScalar::new(msg_lo, msg_hi);
+        let sigma = Sigma {
+            c0: EmbeddedCurveScalar::new(c0_lo, c0_hi),
+            c1: EmbeddedCurveScalar::new(c1_lo, c1_hi),
+            z1: EmbeddedCurveScalar::new(z1_lo, z1_hi),
+        };
+        let theta = Theta {
+            m0: EmbeddedCurveScalar::new(m0_lo, m0_hi),
+            Z0: EmbeddedCurvePoint {x: z0_x, y: z0_y, is_infinite: false}
+        };
+        let sig = Signature { sigma, theta };
+        verify(msg, sig, vk);
 
-    // Uncomment to make test fail
-    // main(1, 1);
+        let to_balance = storage.public_balances.at(to).read().add(amount);
+        storage.public_balances.at(to).write(to_balance);
+    }
 }
