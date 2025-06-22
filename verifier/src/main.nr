@@ -54,7 +54,7 @@ pub contract SimpleToken {
     struct Storage<Context> {
         balances: Map<AztecAddress, BalanceSet<Context>, Context>,
         public_balances: Map<AztecAddress, PublicMutable<u128, Context>, Context>,
-        revoked: Map<Field, PublicMutable<Field, Context>, Context>
+        revoked: Map<Field, PublicMutable<Field, Context>, Context>,
         symbol: PublicImmutable<FieldCompressedString, Context>,
         name: PublicImmutable<FieldCompressedString, Context>,
         decimals: PublicImmutable<u8, Context>,
